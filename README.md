@@ -2,6 +2,7 @@
 <h2>Тестовое задание</h2>
 <p>
   Использовался FastAPI. БД PostgreSQL. Для миграции Alembic. Для работы с БД SqlAlchemy Core + mapper. Тесты роутов на pytest
+  <p>Уровень изолированности SERIALIZABLE для операций с балансом</p>
   <p>Инструкция по запуску:</p>
   <ul>
     <li>docker compose build</li>
