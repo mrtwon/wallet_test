@@ -1,6 +1,9 @@
+import pytest
 from starlette.testclient import TestClient
 
 
+@pytest.mark.v1
+@pytest.mark.wallet
 class TestWallerRoute:
     def test_create_wallet(
             self,

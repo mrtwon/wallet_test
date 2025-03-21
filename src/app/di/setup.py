@@ -23,6 +23,10 @@ class Session(Protocol):
     pass
 
 
+class IsolationSession(Protocol):
+    pass
+
+
 async def get_session() -> AsyncSession:
     async_engine = create_async_engine(
         url=settings.DATABASE_URL_asyncpg
@@ -33,7 +37,28 @@ async def get_session() -> AsyncSession:
         yield s
 
 
+async def get_session_isolation() -> AsyncSession:
+    async_engine = create_async_engine(
+        url=settings.DATABASE_URL_asyncpg,
+        isolation_level='SERIALIZABLE'
+    )
+
+    session = async_sessionmaker(async_engine)
+    async with session(expire_on_commit=False) as s:
+        yield s
+
+
 def get_uow(session: Session = Depends()):
+    return SQLAlchemyUoW(
+        session=session,
+        wallet=WalletRepo,
+        wallet_operation=WalletOperationRepo,
+        operation=OperationRepo,
+        status=StatusRepo
+    )
+
+
+async def get_serializable_uow(session: IsolationSession = Depends()):
     return SQLAlchemyUoW(
         session=session,
         wallet=WalletRepo,
@@ -58,6 +83,12 @@ class BaseUOW(
     ...
 
 
+class SerializableBaseUOW(BaseUOW):
+    ...
+
+
 def di_setup(app: FastAPI):
     app.dependency_overrides[Session] = get_session
+    app.dependency_overrides[IsolationSession] = get_session_isolation
     app.dependency_overrides[BaseUOW] = get_uow
+    app.dependency_overrides[SerializableBaseUOW] = get_serializable_uow

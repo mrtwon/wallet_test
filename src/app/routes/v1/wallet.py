@@ -3,7 +3,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends
 
-from src.app.di.setup import BaseUOW
+from src.app.di.setup import BaseUOW, SerializableBaseUOW
 from src.app.exception.exception import WalletNotFound, NotEnoughMoneyException, UnknownMoneyOperationException
 from src.app.routes.v1.schema.wallet import WalletSchema, WalletOperation
 from src.app.routes.v1.schema.wallet_operation import WalletOperationSchema
@@ -40,7 +40,7 @@ async def add_wallet_router(
 async def operation_wallet_router(
         schema: WalletOperation,
         wallet_id: UUID,
-        repo: BaseUOW = Depends(),
+        repo: SerializableBaseUOW = Depends(),
 ):
     result_get_wallet = await repo.wallet.get(wallet_id)
     if result_get_wallet is None:
@@ -53,8 +53,6 @@ async def operation_wallet_router(
             wallet_id=wallet_id,
             amount=schema.amount
         )
-        print('DEPOSIT <><>')
-        print(new_wallet_operation_2.wallet_operation_id)
         await repo.wallet_operation.add(new_wallet_operation_2)
         await repo.commit()
         try:
@@ -66,7 +64,6 @@ async def operation_wallet_router(
             await repo.wallet_operation.update(new_wallet_operation_2)
             await repo.commit()
         except Exception as e:
-            print(e)
             new_wallet_operation_2.status_id = 'CANCEL'
             new_wallet_operation_2.update_at = datetime.datetime.now()
             await repo.wallet_operation.update(new_wallet_operation_2)
@@ -81,8 +78,6 @@ async def operation_wallet_router(
             wallet_id=wallet_id,
             amount=schema.amount
         )
-        print('WITHDRAW <><>')
-        print(new_wallet_operation_2.wallet_operation_id)
         await repo.wallet_operation.add(new_wallet_operation_2)
         await repo.commit()
         try:
@@ -90,10 +85,12 @@ async def operation_wallet_router(
             await repo.wallet.update(result_get_wallet)
 
             new_wallet_operation_2.status_id = 'CONFIRM'
+            new_wallet_operation_2.update_at = datetime.datetime.now()
             await repo.wallet_operation.update(new_wallet_operation_2)
             await repo.commit()
-        except Exception:
+        except Exception as e:
             new_wallet_operation_2.status_id = 'CANCEL'
+            new_wallet_operation_2.update_at = datetime.datetime.now()
             await repo.wallet_operation.update(new_wallet_operation_2)
             await repo.commit()
     else:

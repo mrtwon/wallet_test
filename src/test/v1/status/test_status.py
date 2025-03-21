@@ -1,6 +1,8 @@
+import pytest
 from starlette.testclient import TestClient
 
-
+@pytest.mark.v1
+@pytest.mark.status
 class TestStatus:
     def test_get_status(self, client: TestClient):
         response = client.get('/api/v1/status')
